@@ -195,7 +195,3 @@ void progress_bar::hide() {
 std::string progress_bar::defaultBarWithTitle(const std::string &title) {
     return "[" + title + " - %prog%%] |%bar%| %curr%/%max% [%eta%, %spd%it/s]";
 }
-
-
-
-

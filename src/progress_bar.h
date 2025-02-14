@@ -86,7 +86,7 @@ namespace progress_bar {
     };
 
     template <typename T>
-    IterableWrapper<T> from(T& iterator, int size, const std::string& name = "") {
+    IterableWrapper<T> from(T& iterator, long size, const std::string& name = "") {
         if (name.empty()) {
             set(DEFAULT_PROGRESS_BAR, size);
         } else {
@@ -209,11 +209,6 @@ namespace progress_bar {
         }
         return IterableRange<T>(start, end, step);
     }
-
-
-
 };
-
-
 
 #endif //PROGRESS_BAR_H

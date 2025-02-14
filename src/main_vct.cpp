@@ -193,9 +193,10 @@ int main(int argc, char *argv[]) {
 
     // write input list ids
     std::ofstream input_listing_file(cacheDir / "input_list");
-    for (const auto &path: input_files) {
+    for (const auto &path: progress_bar::from(input_files, input_files.size() - 1, "Write Input IDS")) {
         input_listing_file << path.first << " " << path.second << std::endl;
     }
+    std::cout << " .. Done" << std::endl;
     input_listing_file.close();
 
     // build the output files tree
@@ -209,7 +210,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Prepare Output Hashes .. ";
     std::map<size_t, FileHash> outputFilesHashes;
     std::map<size_t, std::vector<BlockHash> > outputFilesBlocksHashes;
-    for (int i = 0; i < output_files.size(); ++i) {
+    for (const auto& i : progress_bar::ranged<long>(0, output_files.size() - 1, 1, "Prepare Output Hashes")) {
         const auto &path = output_files[i];
         outputFilesHashes[i] = {
             .path = path.second,
@@ -220,7 +221,7 @@ int main(int argc, char *argv[]) {
         sha256FileBlocks(path.first, blockSize, fileBlocksHashes);
         outputFilesBlocksHashes[i] = fileBlocksHashes;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << " .. Done" << std::endl;
 
     // created inverted hash map to search for output hashes inside the inputs quickly
     std::cout << "Prepare Inverted Index .. ";
@@ -229,7 +230,7 @@ int main(int argc, char *argv[]) {
     // more than one file can have the same hash .. its hard to happen .. but possible
     std::map<std::string, std::vector<std::pair<size_t, size_t> > > invertedBlocksHashes;
     // more than one block can have the same hash
-    for (int i = 0; i < input_files.size(); ++i) {
+    for (const auto& i : progress_bar::ranged<long>(0, output_files.size() - 1, 1, "Prepare Inverted Index")) {
         const auto &path = input_files[i];
         invertedInputList[path.second] = i;
         invertedFilesHashes[inputFilesHashes[i].hash].emplace_back(i);
@@ -238,14 +239,14 @@ int main(int argc, char *argv[]) {
             //direct the hash to the index-th block in the i-th file
         }
     }
-    std::cout << "Done" << std::endl;
+    std::cout << " .. Done" << std::endl;
 
     std::cout << "Writing Update Files .. " << std::endl;
     const auto rootDir = cacheDir / "data";
     fs::create_directories(rootDir);
     constexpr size_t WRITER_BUFFER_SIZE = 64 * 1024;
     auto writer_buffer = new char[WRITER_BUFFER_SIZE];
-    for (int i = 0; i < output_files.size(); ++i) {
+    for (const auto& i : progress_bar::ranged<long>(0, output_files.size() - 1, 1, "Writing Update Files")) {
         std::ofstream file_writer(rootDir / output_files[i].second);
         std::ifstream file_reader(output_files[i].first, std::ios::binary);
         const auto &path = output_files[i];
@@ -265,9 +266,6 @@ int main(int argc, char *argv[]) {
                 file_writer.write(writer_buffer, sizeof(char) * 2 + sizeof(size_t));
                 write_complete = true;
                 break;
-            } else {
-                std::cout << "   | same hash but diff files: " << input_files[it].first << " " << path.first <<
-                        std::endl;
             }
         }
 
@@ -316,22 +314,22 @@ int main(int argc, char *argv[]) {
         file_reader.close();
         file_writer.close();
 
-        std::cout << " >> " << path.first << std::endl;
+        std::cout << "\r" << " >> " << path.first << std::endl;
     }
 
     delete[] writer_buffer;
-    std::cout << "Done" << std::endl;
+    std::cout << " .. Done" << std::endl;
 
     // write hashes in a file for validation
     if (vm == "all" || vm == "output") {
-        std::cout << "Output validation is enabled. building output validation file .. ";
+        std::cout << "Output validation is enabled. building output validation file ." << std::endl;
         auto ov = cacheDir / "ov";
         std::ofstream ov_file(ov);
-        for (const auto &it: outputFilesHashes) {
+        for (const auto &it: progress_bar::from(outputFilesHashes, outputFilesHashes.size() - 1, "Output Hashes")) {
             ov_file << it.second.path << " " << it.second.hash << std::endl;
         }
         ov_file.close();
-        std::cout << "Done" << std::endl;
+        std::cout << " .. Done" << std::endl;
     }
 
     std::cout << "Zipping Files .. ";
