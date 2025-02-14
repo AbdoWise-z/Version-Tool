@@ -13,7 +13,7 @@
 #include "file_utils.h"
 #include "structures.h"
 #include "commands.h"
-
+#include "progress_bar.h"
 
 bool addFileToZip(mz_zip_archive &zip, const fs::path &filePath, const fs::path &basePath) {
     std::ifstream file(filePath, std::ios::binary | std::ios::ate);
@@ -154,6 +154,7 @@ int main(int argc, char *argv[]) {
            dst_path.c_str(), vm.c_str(), output.c_str());
 
     // build input tree
+
     std::cout << "Listing inputs .. ";
     auto input_tree = buildFileTree(src_path);
     std::vector<std::pair<fs::path, fs::path> > input_files;
@@ -164,7 +165,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Prepare Input Hashes .. ";
     std::map<size_t, FileHash> inputFilesHashes;
     std::map<size_t, std::vector<BlockHash> > inputFilesBlocksHashes;
-    for (int i = 0; i < input_files.size(); ++i) {
+    for (const auto& i : progress_bar::ranged<long>(0, input_files.size() - 1, 1, "Prepare Input Hashes")) {
         const auto &path = input_files[i];
         inputFilesHashes[i] = {
             .path = path.second,
@@ -175,19 +176,19 @@ int main(int argc, char *argv[]) {
         sha256FileBlocks(path.first, blockSize, fileBlocksHashes);
         inputFilesBlocksHashes[i] = fileBlocksHashes;
     }
-    std::cout << "Done" << std::endl;
+    std::cout << " .. Done" << std::endl;
 
 
     // write hashes in a file for validation
     if (vm == "all" || vm == "input") {
-        std::cout << "Input validation is enabled. building input validation file .. ";
+        std::cout << "Input validation is enabled. building input validation file." << std::endl;
         auto iv = cacheDir / "iv";
         std::ofstream iv_file(iv);
-        for (const auto &it: inputFilesHashes) {
+        for (const auto &it: progress_bar::from(inputFilesHashes, inputFilesHashes.size() - 1, "Input Hashes")) {
             iv_file << it.second.path << " " << it.second.hash << std::endl;
         }
         iv_file.close();
-        std::cout << "Done" << std::endl;
+        std::cout << " .. Done" << std::endl;
     }
 
     // write input list ids

@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <limits.h>
 #include <sstream>
 
 #ifdef _WIN32
@@ -47,18 +48,18 @@ static std::string customFormat(const std::string& format, const std::unordered_
 }
 
 static std::string bar_format;
-static int progress = 0;
-static int max_progress = 100;
+static long long progress = 0;
+static long long max_progress = 100;
 static int bar_size = 25;
 static std::string bar_char = "\u25A0";
-static double speed = 0;
+static long double speed = 0;
 static std::chrono::steady_clock::time_point start_time;
-static double gamma = 0.4;
+static long double gamma = 0.4;
 
 
 static void render() {
     auto screen_width = getConsoleWidth();
-    const auto remaining_time = (max_progress - progress) /  std::max(speed, 0.01);
+    const auto remaining_time = (max_progress - progress) /  std::max(speed, 0.01L);
     std::ostringstream ss;
     ss << std::fixed << std::setprecision(2) << speed;
     const auto spead_str = ss.str();
@@ -80,7 +81,7 @@ static void render() {
     const auto max_str = ss.str();
     ss.str("");
 
-    ss << std::fixed << std::setprecision(2) << (100.0 * progress / max_progress);
+    ss << std::fixed << std::setprecision(2) << (100.0L * progress / max_progress);
     const auto progress_str = ss.str();
     ss.str("");
 
@@ -123,7 +124,7 @@ static void render() {
 // %curr% : the current progress value
 // %max%  : the max progress value
 // %preg% : the completion percentage
-void progress_bar::set(const std::string &bar, const int max_progress, const int bar_size, const std::string& bar_char) {
+void progress_bar::set(const std::string &bar, const long long max_progress, const int bar_size, const std::string& bar_char) {
     ::bar_format = bar;
 
     ::max_progress = max_progress;
@@ -139,7 +140,19 @@ void progress_bar::set(const std::string &bar, const int max_progress, const int
     render();
 }
 
-void progress_bar::setMax(int max_progress) {
+void progress_bar::setUnlimited(const std::string &bar) {
+    ::bar_format = bar;
+    ::max_progress = LONG_LONG_MAX;
+    ::progress = 0;
+    start_time = std::chrono::steady_clock::now();
+    render();
+}
+
+void progress_bar::step() {
+    setProgress(progress + 1);
+}
+
+void progress_bar::setMax(long long max_progress) {
     ::max_progress = max_progress;
 }
 
@@ -152,7 +165,7 @@ void progress_bar::setBarChar(const std::string &bar_char) {
 }
 
 
-void progress_bar::setProgress(int prog) {
+void progress_bar::setProgress(long long prog) {
     const auto this_time = std::chrono::steady_clock::now();
     const auto duration = static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(this_time - start_time).count());
     start_time = this_time;

@@ -13,14 +13,17 @@
 #include <stdexcept>
 
 #define DEFAULT_PROGRESS_BAR "%prog%% |%bar%| %curr%/%max% [%eta%, %spd%it/s]"
+#define DEFAULT_PROGRESS_BAR_UNLIMITED "[%spd%it/s]"
 namespace progress_bar {
 
 
-    void set(const std::string &bar, int max_progress = 100, int bar_size = 25, const std::string& bar_char = "\u25A0");
-    void setMax(int max_progress);
+    void set(const std::string &bar, long long max_progress = 100, int bar_size = 25, const std::string& bar_char = "\u25A0");
+    void setUnlimited(const std::string &bar = DEFAULT_PROGRESS_BAR_UNLIMITED);
+    void step();
+    void setMax(long long max_progress);
     void setSize(int bar_size);
     void setBarChar(const std::string &bar_char);
-    void setProgress(int prog);
+    void setProgress(long long prog);
     void reset();
     void hide();
 
@@ -199,7 +202,6 @@ namespace progress_bar {
             }
         }
 
-
         if (name.empty()) {
             set(DEFAULT_PROGRESS_BAR, static_cast<int>(std::abs((start - end) / step)));
         } else {
@@ -207,6 +209,8 @@ namespace progress_bar {
         }
         return IterableRange<T>(start, end, step);
     }
+
+
 
 };
 
